@@ -1,2 +1,15 @@
+# Binaries
 shadow.bg
+backend/shadow.bg
+
+# Databases
 db.sqlite
+rarbg_db.sqlite
+
+# Node.js
+frontend/node_modules/
+frontend/out/
+frontend/.next/
+
+# OS specific
+.DS_Store

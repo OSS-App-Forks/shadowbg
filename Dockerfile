@@ -1,26 +1,37 @@
 # ------------------------------------------------------------------------------
-# Build shadowbg binary & frontend
-FROM alpine:latest AS shadowbgbuild
-RUN apk update && apk add npm go git alpine-sdk
+# Build shadowbg binary
+FROM golang:alpine AS backend-build
+RUN apk add --no-cache alpine-sdk
 
-ADD https://api.github.com/repos/OSS-App-Forks/shadowbg/git/refs/heads/master version.json
-RUN git clone https://github.com/OSS-App-Forks/shadowbg /shadowbg
-RUN cd /shadowbg && CGO_CFLAGS="-D_LARGEFILE64_SOURCE=1" go build -o shadow.bg main.go && strip shadow.bg
+WORKDIR /build
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+COPY backend/ ./
+RUN CGO_CFLAGS="-D_LARGEFILE64_SOURCE=1" go build -o shadow.bg main.go && strip shadow.bg
 
-ADD https://api.github.com/repos/xav1erenc/shadowbg-frontend/git/refs/heads/master version2.json
-RUN git clone https://github.com/xav1erenc/shadowbg-frontend /frontend
-RUN cd /frontend && npm install && npm run build && mv out /fe
+# ------------------------------------------------------------------------------
+# Build frontend
+FROM node:alpine AS frontend-build
+WORKDIR /build
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
 # ------------------------------------------------------------------------------
 # Pull base image
 FROM alpine:latest
-LABEL maintainer="xav1erenc"
+LABEL maintainer="droidfreak32"
 LABEL org.opencontainers.image.source="https://github.com/OSS-App-Forks/shadowbg"
+
+WORKDIR /app
+
 # ------------------------------------------------------------------------------
 # Copy files to final stage
-COPY --from=shadowbgbuild /shadowbg/shadow.bg /app/shadow.bg
-COPY --from=shadowbgbuild /shadowbg/app.sh /app/
-COPY --from=shadowbgbuild /fe /app/frontend/
+COPY --from=backend-build /build/shadow.bg /app/shadow.bg
+COPY app.sh /app/
+# The frontend build is assumed to output to 'out' (common for Next.js/SSG)
+COPY --from=frontend-build /build/out /app/frontend/
 
 # ------------------------------------------------------------------------------
 # Identify Volumes
