@@ -2,6 +2,8 @@
 
 An API built around the RARBG backup, with optional Next.js frontend
 
+This project is a fork of [xav1erenc/shadowbg](https://github.com/xav1erenc/shadowbg), originally unlicensed.
+
 ###### Prerequisites
 - Go ([v1.26](https://go.dev/dl/))
 - NPM (Optional, to build the frontend)
