@@ -35,7 +35,7 @@ func frontendFolderExists() (bool, error) {
 }
 
 func ConnectDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./db.sqlite")
+	db, err := sql.Open("sqlite3", "/data/db.sqlite")
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func ConnectDatabase() (*sql.DB, error) {
 }
 func main() {
 	var port string
-	var serveFrontend bool = false 
+	var serveFrontend bool = false
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -80,9 +80,9 @@ func main() {
 			c.String(200, "ShadowBG")
 		})
 	}
-	
+
 	router := r.Group("/api")
-	{		
+	{
 		router.GET("", mainPage(rarbgDB))
 		router.GET("search", searchResults(rarbgDB))
 	}
@@ -105,7 +105,7 @@ func mainPage(db *sql.DB) gin.HandlerFunc {
 				log.Fatal(err)
 			}
 		}
-		
+
 	}
 }
 
@@ -140,8 +140,8 @@ func searchResults(db *sql.DB) gin.HandlerFunc {
 				log.Fatal(err)
 			}
 		}
-		
-		
+
+
 	}
 }
 
