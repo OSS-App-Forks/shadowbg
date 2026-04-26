@@ -16,7 +16,7 @@ if (typeof window !== "undefined") {
 const CATEGORY_STRUCTURE = [
   { id: 'ebooks', label: 'eBooks' },
   {
-    id: 'games',
+    id: 'games-parent',
     label: 'Games',
     subcategories: [
       { id: 'games_pc_iso', label: 'PC ISO' },
@@ -27,9 +27,10 @@ const CATEGORY_STRUCTURE = [
     ]
   },
   {
-    id: 'movies',
+    id: 'movies-parent',
     label: 'Movies',
     subcategories: [
+      { id: 'movies', label: 'Uncategorized' },
       { id: 'movies_bd_full', label: 'BD Full' },
       { id: 'movies_bd_remux', label: 'BD Remux' },
       { id: 'movies_x264', label: 'x264' },
@@ -40,14 +41,20 @@ const CATEGORY_STRUCTURE = [
       { id: 'movies_x265_4k', label: 'x265 4K' },
       { id: 'movies_x265_4k_hdr', label: 'x265 4K HDR' },
       { id: 'movies_xvid', label: 'XviD' },
-      { id: 'movies_xvid_720', label: 'XviD 720p' },
+      { id: 'movies_xvid_720', label: 'XviD 720p' }
     ]
   },
-  { id: 'music_flac', label: 'Music FLAC' },
-  { id: 'music_mp3', label: 'Music MP3' },
+  {
+    id: 'music-parent',
+    label: 'Music',
+    subcategories: [
+      { id: 'music_flac', label: 'Music FLAC' },
+      { id: 'music_mp3', label: 'Music MP3' }
+    ]
+  },
   { id: 'software_pc_iso', label: 'Software PC ISO' },
   {
-    id: 'tv',
+    id: 'tv-parent',
     label: 'TV',
     subcategories: [
       { id: 'tv_sd', label: 'TV SD' },
@@ -151,20 +158,34 @@ export default function Home() {
     }
   };
 
-  const toggleCategory = (catId, parentId = null) => {
+  const toggleCategory = (catId) => {
     setSelectedCats(prev => {
       let next = [...prev];
-      const isSelected = next.includes(catId);
 
-      if (isSelected) {
-        // Unselecting
-        next = next.filter(id => id !== catId);
+      if (catId.endsWith('-parent')) {
+        // Find the group
+        const parent = CATEGORY_STRUCTURE.find(c => c.id === catId);
+        if (parent && parent.subcategories) {
+          const subIds = parent.subcategories.map(s => s.id);
+          const allSelected = subIds.length > 0 && subIds.every(id => next.includes(id));
+          
+          if (allSelected) {
+            // Unselect all subcategories
+            next = next.filter(id => !subIds.includes(id));
+          } else {
+            // Select all subcategories that are missing
+            subIds.forEach(id => {
+              if (!next.includes(id)) next.push(id);
+            });
+          }
+        }
       } else {
-        // Selecting
-        next.push(catId);
-        // If it's a subcategory, ensure parent is selected
-        if (parentId && !next.includes(parentId)) {
-          next.push(parentId);
+        // Regular toggle
+        const isSelected = next.includes(catId);
+        if (isSelected) {
+          next = next.filter(id => id !== catId);
+        } else {
+          next.push(catId);
         }
       }
       return next;
@@ -214,28 +235,47 @@ export default function Home() {
 
           {showCatDropdown && (
             <div className="category-dropdown">
-              {CATEGORY_STRUCTURE.map(cat => (
-                <div key={cat.id} className="category-group">
-                  <label className="category-option">
-                    <input
-                      type="checkbox"
-                      checked={selectedCats.includes(cat.id)}
-                      onChange={() => toggleCategory(cat.id)}
-                    />
-                    {cat.label}
-                  </label>
-                  {cat.subcategories && cat.subcategories.map(sub => (
-                    <label key={sub.id} className="category-option sub-option">
-                      <input
-                        type="checkbox"
-                        checked={selectedCats.includes(sub.id)}
-                        onChange={() => toggleCategory(sub.id, cat.id)}
-                      />
-                      {sub.label}
-                    </label>
-                  ))}
-                </div>
-              ))}
+              {CATEGORY_STRUCTURE.map(cat => {
+                if (cat.id.endsWith('-parent')) {
+                  const subIds = cat.subcategories.map(s => s.id);
+                  const allSelected = subIds.length > 0 && subIds.every(id => selectedCats.includes(id));
+                  return (
+                    <div key={cat.id} className="category-group">
+                      <label className="category-option" style={{ fontWeight: 'bold' }}>
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={() => toggleCategory(cat.id)}
+                        />
+                        {cat.label} (All)
+                      </label>
+                      {cat.subcategories.map(sub => (
+                        <label key={sub.id} className="category-option sub-option">
+                          <input
+                            type="checkbox"
+                            checked={selectedCats.includes(sub.id)}
+                            onChange={() => toggleCategory(sub.id)}
+                          />
+                          {sub.label}
+                        </label>
+                      ))}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div key={cat.id} className="category-group">
+                      <label className="category-option" style={{ fontWeight: 'bold' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCats.includes(cat.id)}
+                          onChange={() => toggleCategory(cat.id)}
+                        />
+                        {cat.label}
+                      </label>
+                    </div>
+                  );
+                }
+              })}
             </div>
           )}
         </div>
