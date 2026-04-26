@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 100" width="100%" height="100%">
+  <style>
+    .logo-text {
+      /* 1. Use 'middle' to anchor the text from its center point */
+      text-anchor: middle;
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: 85px;
+      letter-spacing: 2px;
+    }
+
+    .text-shadow { fill: #545454; }
+    .text-bg { fill: #2a5373; }
+
+    @media (prefers-color-scheme: dark) {
+      .text-shadow { fill: #d4d4d4; }
+      .text-bg { fill: #4fa2e3; }
+    }
+  </style>
+
+  <!-- 2. Set x to 215 (which is 50% of your 430 width) -->
+  <text x="215" y="80" class="logo-text">
+    <tspan class="text-shadow">SHADOW</tspan><tspan class="text-bg">BG</tspan>
+  </text>
+</svg>
