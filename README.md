@@ -1,17 +1,17 @@
-# Shadow.BG 
+# Shadow.BG
 
 An API built around the RARBG backup, with optional Next.js frontend
 
 ###### Prerequisites
-- Go ([v1.20](https://go.dev/dl/))
+- Go ([v1.26](https://go.dev/dl/))
 - NPM (Optional, to build the frontend)
 
 ###### Steps to build
 ````
-git clone https://github.com/xav1erenc/shadowbg && cd shadowbg
-go build -o shadow.bg main.go
+git clone https://github.com/oss-app-forks/shadowbg && cd shadowbg/backend
+go build -o ../shadow.bg main.go
 # Optional
-git clone https://github.com/xav1erenc/shadowbg-frontend ../shadowbg-frontend && cd ../shadowbg-frontend
+cd ../frontend
 npm install && npm run build
 cp -rf out/* ../shadowbg/frontend/
 ````

@@ -9,5 +9,5 @@ if [ ! -f ${DBFILE} ]; then
 fi
 
 cd /app
-ln -s ${DBFILE} db.sqlite
+ln -sf ${DBFILE} db.sqlite
 exec ./shadow.bg --port 80 --serve-frontend
