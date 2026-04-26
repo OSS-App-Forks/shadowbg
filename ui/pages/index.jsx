@@ -86,15 +86,12 @@ function readableFileSize(size) {
   return parseFloat(size).toFixed(2) + ' ' + units[i];
 }
 
-async function handleSearch(setSearchResult, text, offset, setOffset, selectedCategories) {
+async function handleSearch(setSearchResult, text, offset, setOffset) {
   if(text === "") return;
   if (progress) progress.start();
 
   let url = '/api/search?q='+encodeURIComponent(text);
   if (offset > 1) url += "&page=" + offset;
-  if (selectedCategories && selectedCategories.length > 0) {
-    url += "&categories=" + selectedCategories.join(',');
-  }
 
   const data = await fetchResults(url);
   if (progress) progress.finish();
@@ -162,12 +159,6 @@ export default function Home() {
       if (isSelected) {
         // Unselecting
         next = next.filter(id => id !== catId);
-        // If it's a parent, unselect all subcategories
-        const parent = CATEGORY_STRUCTURE.find(c => c.id === catId);
-        if (parent && parent.subcategories) {
-          const subIds = parent.subcategories.map(s => s.id);
-          next = next.filter(id => !subIds.includes(id));
-        }
       } else {
         // Selecting
         next.push(catId);
@@ -175,18 +166,15 @@ export default function Home() {
         if (parentId && !next.includes(parentId)) {
           next.push(parentId);
         }
-        // If it's a parent, select all subcategories
-        const parent = CATEGORY_STRUCTURE.find(c => c.id === catId);
-        if (parent && parent.subcategories) {
-          const subIds = parent.subcategories.map(s => s.id);
-          subIds.forEach(id => {
-            if (!next.includes(id)) next.push(id);
-          });
-        }
       }
       return next;
     });
   };
+
+  const displayedResults = searchResult ? searchResult.filter(item => {
+    if (selectedCats.length === 0) return true;
+    return selectedCats.includes(item.cat);
+  }) : [];
 
   return (
     <div className="main">
@@ -200,13 +188,13 @@ export default function Home() {
           placeholder="Search for something..."
           onKeyPress={(e) => {
             if(e.which == 13) {
-              handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset, selectedCats)
+              handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset)
             }
           }}
         />
         <button
           className="search-button"
-          onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset, selectedCats)}
+          onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset)}
           type="button"
         >
           <FaSearch size={18} />
@@ -255,40 +243,46 @@ export default function Home() {
 
       {searchResult && (
         <>
-          <ul className="results-list">
-            {searchResult.map((item, key) => (
-              <li key={key} className="search-item">
-                <a
-                  className="search-item-magnet"
-                  href={item.magnet}
-                  title="Copy Magnet Link"
-                  onClick={(e) => handleCopy(e, item.magnet)}
-                >
-                  <FaMagnet />
-                </a>
-                <span className="search-item-title">{item.title}</span>
-                <div className="search-item-meta">
-                  <span className="category-tag">{item.cat}</span>
-                  <span>{readableFileSize(item.size.String)}</span>
-                  <span>{item.dt}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {displayedResults.length === 0 && selectedCats.length > 0 ? (
+            <div style={{textAlign: "center", marginTop: "20px", color: "var(--text-muted)"}}>
+              No results match the selected categories on this page.
+            </div>
+          ) : (
+            <ul className="results-list">
+              {displayedResults.map((item, key) => (
+                <li key={key} className="search-item">
+                  <a
+                    className="search-item-magnet"
+                    href={item.magnet}
+                    title="Copy Magnet Link"
+                    onClick={(e) => handleCopy(e, item.magnet)}
+                  >
+                    <FaMagnet />
+                  </a>
+                  <span className="search-item-title">{item.title}</span>
+                  <div className="search-item-meta">
+                    <span className="category-tag">{item.cat}</span>
+                    <span>{readableFileSize(item.size.String)}</span>
+                    <span>{item.dt}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {(searchResult.length >= 30 || searchOffset > 1) && (
             <div className="pagination-container">
               <button
                 className="pagination-button"
                 disabled={searchOffset == 1}
-                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset - 1, setSearchOffset, selectedCats)}
+                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset - 1, setSearchOffset)}
               >
                 Previous
               </button>
               <button
                 className="pagination-button"
                 disabled={searchResult.length < 30}
-                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset + 1, setSearchOffset, selectedCats)}
+                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset + 1, setSearchOffset)}
               >
                 Next
               </button>
@@ -305,4 +299,3 @@ export default function Home() {
     </div>
   );
 }
-
