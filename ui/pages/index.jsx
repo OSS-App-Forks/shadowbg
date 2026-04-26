@@ -55,13 +55,40 @@ async function handleSearch(setSearchResult, text, offset, setOffset) {
 }
 
 export default function Home() {
-  let [searchResult, setSearchResult] = useState();
-  let [searchOffset, setSearchOffset] = useState(1);
-  let searchTextBox = useRef(null);
+  const [searchResult, setSearchResult] = useState();
+  const [searchOffset, setSearchOffset] = useState(1);
+  const [toastMessage, setToastMessage] = useState(null);
+  const searchTextBox = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [searchResult])
+
+  const handleCopy = (e, link) => {
+    e.preventDefault();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        setToastMessage("Copied to clipboard!");
+        setTimeout(() => setToastMessage(null), 2500);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = link;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setToastMessage("Copied to clipboard!");
+        setTimeout(() => setToastMessage(null), 2500);
+      } catch (err) {
+        console.error('Fallback copy failed: ', err);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   return (
     <div className="main">
@@ -93,7 +120,12 @@ export default function Home() {
           <ul className="results-list">
             {searchResult.map((item, key) => (
               <li key={key} className="search-item">
-                <a className="search-item-magnet" href={item.magnet} title="Magnet Link">
+                <a 
+                  className="search-item-magnet" 
+                  href={item.magnet} 
+                  title="Copy Magnet Link"
+                  onClick={(e) => handleCopy(e, item.magnet)}
+                >
                   <FaMagnet />
                 </a>
                 <span className="search-item-title">{item.title}</span>
@@ -124,6 +156,12 @@ export default function Home() {
             </div>
           )}
         </>
+      )}
+
+      {toastMessage && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
       )}
     </div>
   );
