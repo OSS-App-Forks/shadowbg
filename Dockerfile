@@ -18,7 +18,8 @@ RUN npm install && npm run build
 # Pull base image
 FROM alpine:latest
 LABEL maintainer="droidfreak32"
-LABEL org.opencontainers.image.source https://github.com/OSS-App-Forks/shadowbg
+LABEL org.opencontainers.image.source="https://github.com/OSS-App-Forks/shadowbg"
+
 WORKDIR /app
 
 # ------------------------------------------------------------------------------
