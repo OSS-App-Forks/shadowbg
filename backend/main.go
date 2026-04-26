@@ -119,6 +119,7 @@ func writeContentType(w http.ResponseWriter, value []string) {
 func searchResults(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := c.Query("q")
+		categories := c.Query("categories")
 		page, _ := strconv.Atoi(c.Query("page"))
 		offset := 0
 		if page > 0 {
@@ -128,7 +129,7 @@ func searchResults(db *sql.DB) gin.HandlerFunc {
 			c.JSON(404, gin.H{"query": query, "results": "", "error": "Invalid query"})
 			return
 		}
-		items, err := Search(query, db, offset)
+		items, err := Search(query, categories, db, offset)
 		if err != nil {
 			c.JSON(404, gin.H{"query": query, "results": "", "error": err})
 		} else {
@@ -145,13 +146,24 @@ func searchResults(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func Search(query string, DB *sql.DB, offset int) ([]dbItem, error) {
+func Search(query string, categories string, DB *sql.DB, offset int) ([]dbItem, error) {
 	query = strings.Replace(query, "\"", "", -1)
 	imdbMatchReg, _ := regexp.Compile("tt([0-9]+)")
 	imdbMatch := imdbMatchReg.FindString(query)
 	items := make([]dbItem, 0)
+
+	catFilter := ""
+	if categories != "" {
+		cats := strings.Split(categories, ",")
+		var quotedCats []string
+		for _, cat := range cats {
+			quotedCats = append(quotedCats, "'" + strings.Replace(cat, "'", "''", -1) + "'")
+		}
+		catFilter = " AND cat IN (" + strings.Join(quotedCats, ",") + ")"
+	}
+
 	if imdbMatch != query {
-		modifiedQuery := "SELECT hash,title,dt,cat,size,imdb FROM items WHERE title LIKE "+ `"%`+strings.Replace(query, " ", "%", -1)+`%" ORDER BY dt DESC LIMIT 30 OFFSET `+strconv.Itoa(offset)
+		modifiedQuery := "SELECT hash,title,dt,cat,size,imdb FROM items WHERE title LIKE "+ `"%`+strings.Replace(query, " ", "%", -1)+`%"` + catFilter + ` ORDER BY dt DESC LIMIT 30 OFFSET `+strconv.Itoa(offset)
 		rows, err := DB.Query(modifiedQuery)
 		if err != nil {
 			return nil, err
@@ -175,7 +187,7 @@ func Search(query string, DB *sql.DB, offset int) ([]dbItem, error) {
 		}
 	}
 	if imdbMatch != "" {
-		imdbQuery := "SELECT hash,title,dt,cat,size,imdb FROM items WHERE imdb="+`"`+imdbMatch+`" ORDER BY dt DESC LIMIT 30 OFFSET `+strconv.Itoa(offset)
+		imdbQuery := "SELECT hash,title,dt,cat,size,imdb FROM items WHERE imdb="+`"`+imdbMatch+`"` + catFilter + ` ORDER BY dt DESC LIMIT 30 OFFSET `+strconv.Itoa(offset)
 		imdbRows, err := DB.Query(imdbQuery)
 		if err != nil {
 			return nil, err

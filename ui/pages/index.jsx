@@ -1,7 +1,7 @@
 "use client";
 import {useState, useRef, useEffect} from "react";
 import ProgressBar from "@badrap/bar-of-progress";
-import {FaSearch, FaMagnet} from "react-icons/fa";
+import {FaSearch, FaMagnet, FaChevronDown, FaFilter} from "react-icons/fa";
 
 let progress;
 if (typeof window !== "undefined") {
@@ -12,6 +12,50 @@ if (typeof window !== "undefined") {
     delay: 100,
   });
 }
+
+const CATEGORY_STRUCTURE = [
+  { id: 'ebooks', label: 'eBooks' },
+  {
+    id: 'games',
+    label: 'Games',
+    subcategories: [
+      { id: 'games_pc_iso', label: 'PC ISO' },
+      { id: 'games_pc_rip', label: 'PC RIP' },
+      { id: 'games_ps3', label: 'PS3' },
+      { id: 'games_ps4', label: 'PS4' },
+      { id: 'games_xbox360', label: 'Xbox360' }
+    ]
+  },
+  {
+    id: 'movies',
+    label: 'Movies',
+    subcategories: [
+      { id: 'movies_bd_full', label: 'BD Full' },
+      { id: 'movies_bd_remux', label: 'BD Remux' },
+      { id: 'movies_x264', label: 'x264' },
+      { id: 'movies_x264_3d', label: 'x264 3D' },
+      { id: 'movies_x264_4k', label: 'x264 4K' },
+      { id: 'movies_x264_720', label: 'x264 720p' },
+      { id: 'movies_x265', label: 'x265' },
+      { id: 'movies_x265_4k', label: 'x265 4K' },
+      { id: 'movies_x265_4k_hdr', label: 'x265 4K HDR' },
+      { id: 'movies_xvid', label: 'XviD' },
+      { id: 'movies_xvid_720', label: 'XviD 720p' },
+    ]
+  },
+  { id: 'music_flac', label: 'Music FLAC' },
+  { id: 'music_mp3', label: 'Music MP3' },
+  { id: 'software_pc_iso', label: 'Software PC ISO' },
+  {
+    id: 'tv',
+    label: 'TV',
+    subcategories: [
+      { id: 'tv_sd', label: 'TV SD' },
+      { id: 'tv_uhd', label: 'TV UHD' }
+    ]
+  },
+  { id: 'xxx', label: 'XXX' }
+];
 
 function fetchResults(url) {
   return new Promise((resolve, reject) => {
@@ -42,10 +86,17 @@ function readableFileSize(size) {
   return parseFloat(size).toFixed(2) + ' ' + units[i];
 }
 
-async function handleSearch(setSearchResult, text, offset, setOffset) {
+async function handleSearch(setSearchResult, text, offset, setOffset, selectedCategories) {
   if(text === "") return;
   if (progress) progress.start();
-  const data = await fetchResults('/api/search?q='+encodeURIComponent(text)+(offset > 1 ? "&page="+offset : ""));
+
+  let url = '/api/search?q='+encodeURIComponent(text);
+  if (offset > 1) url += "&page=" + offset;
+  if (selectedCategories && selectedCategories.length > 0) {
+    url += "&categories=" + selectedCategories.join(',');
+  }
+
+  const data = await fetchResults(url);
   if (progress) progress.finish();
   if (!data || data.error) {
     return;
@@ -58,11 +109,24 @@ export default function Home() {
   const [searchResult, setSearchResult] = useState();
   const [searchOffset, setSearchOffset] = useState(1);
   const [toastMessage, setToastMessage] = useState(null);
+  const [selectedCats, setSelectedCats] = useState([]);
+  const [showCatDropdown, setShowCatDropdown] = useState(false);
   const searchTextBox = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [searchResult])
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowCatDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleCopy = (e, link) => {
     e.preventDefault();
@@ -90,29 +154,103 @@ export default function Home() {
     }
   };
 
+  const toggleCategory = (catId, parentId = null) => {
+    setSelectedCats(prev => {
+      let next = [...prev];
+      const isSelected = next.includes(catId);
+
+      if (isSelected) {
+        // Unselecting
+        next = next.filter(id => id !== catId);
+        // If it's a parent, unselect all subcategories
+        const parent = CATEGORY_STRUCTURE.find(c => c.id === catId);
+        if (parent && parent.subcategories) {
+          const subIds = parent.subcategories.map(s => s.id);
+          next = next.filter(id => !subIds.includes(id));
+        }
+      } else {
+        // Selecting
+        next.push(catId);
+        // If it's a subcategory, ensure parent is selected
+        if (parentId && !next.includes(parentId)) {
+          next.push(parentId);
+        }
+        // If it's a parent, select all subcategories
+        const parent = CATEGORY_STRUCTURE.find(c => c.id === catId);
+        if (parent && parent.subcategories) {
+          const subIds = parent.subcategories.map(s => s.id);
+          subIds.forEach(id => {
+            if (!next.includes(id)) next.push(id);
+          });
+        }
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="main">
       <div className="logo"></div>
-      
+
       <div className="search-container">
-        <input 
-          type="text" 
-          className="search-input" 
-          ref={searchTextBox} 
-          placeholder="Search for something..." 
-          onKeyPress={(e) => { 
-            if(e.which == 13) { 
-              handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset)
+        <input
+          type="text"
+          className="search-input"
+          ref={searchTextBox}
+          placeholder="Search for something..."
+          onKeyPress={(e) => {
+            if(e.which == 13) {
+              handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset, selectedCats)
             }
           }}
         />
-        <button 
-          className="search-button" 
-          onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset)} 
+        <button
+          className="search-button"
+          onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, 1, setSearchOffset, selectedCats)}
           type="button"
         >
           <FaSearch size={18} />
         </button>
+      </div>
+
+      <div className="filters-container">
+        <div className="category-filter" ref={dropdownRef}>
+          <button
+            className="category-filter-button"
+            onClick={() => setShowCatDropdown(!showCatDropdown)}
+          >
+            <FaFilter size={12} />
+            Categories {selectedCats.length > 0 && `(${selectedCats.length})`}
+            <FaChevronDown size={10} />
+          </button>
+
+          {showCatDropdown && (
+            <div className="category-dropdown">
+              {CATEGORY_STRUCTURE.map(cat => (
+                <div key={cat.id} className="category-group">
+                  <label className="category-option">
+                    <input
+                      type="checkbox"
+                      checked={selectedCats.includes(cat.id)}
+                      onChange={() => toggleCategory(cat.id)}
+                    />
+                    {cat.label}
+                  </label>
+                  {cat.subcategories && cat.subcategories.map(sub => (
+                    <label key={sub.id} className="category-option sub-option">
+                      <input
+                        type="checkbox"
+                        checked={selectedCats.includes(sub.id)}
+                        onChange={() => toggleCategory(sub.id, cat.id)}
+                      />
+                      {sub.label}
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {searchResult && (
@@ -120,9 +258,9 @@ export default function Home() {
           <ul className="results-list">
             {searchResult.map((item, key) => (
               <li key={key} className="search-item">
-                <a 
-                  className="search-item-magnet" 
-                  href={item.magnet} 
+                <a
+                  className="search-item-magnet"
+                  href={item.magnet}
                   title="Copy Magnet Link"
                   onClick={(e) => handleCopy(e, item.magnet)}
                 >
@@ -130,6 +268,7 @@ export default function Home() {
                 </a>
                 <span className="search-item-title">{item.title}</span>
                 <div className="search-item-meta">
+                  <span className="category-tag">{item.cat}</span>
                   <span>{readableFileSize(item.size.String)}</span>
                   <span>{item.dt}</span>
                 </div>
@@ -139,17 +278,17 @@ export default function Home() {
 
           {(searchResult.length >= 30 || searchOffset > 1) && (
             <div className="pagination-container">
-              <button 
+              <button
                 className="pagination-button"
                 disabled={searchOffset == 1}
-                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset - 1, setSearchOffset)}
+                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset - 1, setSearchOffset, selectedCats)}
               >
                 Previous
               </button>
-              <button 
+              <button
                 className="pagination-button"
                 disabled={searchResult.length < 30}
-                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset + 1, setSearchOffset)}
+                onClick={() => handleSearch(setSearchResult, searchTextBox.current.value, searchOffset + 1, setSearchOffset, selectedCats)}
               >
                 Next
               </button>
@@ -166,3 +305,4 @@ export default function Home() {
     </div>
   );
 }
+
