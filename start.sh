@@ -8,6 +8,4 @@ if [ ! -f ${DBFILE} ]; then
   exit 1
 fi
 
-cd /app
-ln -sf ${DBFILE} db.sqlite
-exec ./shadow.bg --port 80 --serve-frontend
+exec /app/shadow.bg --port 80 --serve-frontend

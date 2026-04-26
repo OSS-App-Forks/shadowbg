@@ -35,7 +35,7 @@ func frontendFolderExists() (bool, error) {
 }
 
 func ConnectDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "/data/db.sqlite")
+	db, err := sql.Open("sqlite3", "/data/rarbg_db.sqlite")
 	if err != nil {
 		return nil, err
 	}

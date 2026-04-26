@@ -8,12 +8,11 @@ An API built around the RARBG backup, with optional Next.js frontend
 
 ###### Steps to build
 ````
-git clone https://github.com/oss-app-forks/shadowbg && cd shadowbg/backend
-go build -o ../shadow.bg main.go
+git clone https://github.com/oss-app-forks/shadowbg && cd shadowbg
+CGO_CFLAGS="-D_LARGEFILE64_SOURCE=1" go -C backend build -o ../shadow.bg main.go
 # Optional
-cd ../frontend
-npm install && npm run build
-cp -rf out/* ../shadowbg/frontend/
+npm -C ui install && npm -C ui run build
+cp -a ui/out frontend
 ````
 
 ###### Usage
