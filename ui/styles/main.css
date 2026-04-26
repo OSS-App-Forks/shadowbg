@@ -1,3 +1,25 @@
+:root {
+  --primary-color: rgb(32 79 115);
+  --primary-color-alpha: rgba(32, 79, 115, 0.4);
+  --secondary-text: #666;
+  --muted-text: #444;
+  --border-color: #dee2e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #4fa2e3;
+    --primary-color-alpha: rgba(79, 162, 227, 0.4);
+    --secondary-text: #aaa;
+    --muted-text: #ccc;
+    --border-color: #444;
+  }
+}
+
+.bar-of-progress {
+  background-color: var(--primary-color) !important;
+}
+
 .main {
   margin-top: 40px;
 }
@@ -12,39 +34,53 @@
 }
 
 #search-text:focus {
-  border-color: rgb(32 79 115);
-  box-shadow: 0 0 0 0.25rem rgba(32,79,115,.4);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem var(--primary-color-alpha);
 }
 
 #search-button {
-  background-color: rgb(32 79 115);
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
   line-height: 15px;
 }
+
 .search-item-magnet {
   position: absolute;
   right: 15px;
   top: 10px;
   color: #e74c3c;
 }
+
 .search-item-title {
   font-weight: 500;
   display: block;
 }
+
 .search-item-size {
-  color: #666;
+  color: var(--secondary-text);
   font-size: 13px;
   display: block;
 }
 
 .search-item-date {
-  color: #444;
+  color: var(--muted-text);
   font-size: 13px;
   display: block;
 }
 
 .pagination .page-link {
   cursor: pointer;
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
+  color: var(--primary-color);
 }
+
+.pagination .page-item.disabled .page-link {
+  background-color: var(--bg-color);
+  border-color: var(--border-color);
+  opacity: 0.6;
+}
+
 .pagination {
   margin: auto;
   margin-top: 20px;
